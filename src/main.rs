@@ -26,6 +26,22 @@ fn quantize(pixel: &image::Rgb<f32>) -> image::Rgb<u8> {
     ])
 }
 
+use image::ImageBuffer;
+type Pixel = image::Rgb<f32>;
+type RenderBuffer = ImageBuffer<Pixel, Vec<f32>>;
+
+fn render(buffer: &mut RenderBuffer) {
+    let width = buffer.width();
+    let height = buffer.height();
+
+    buffer.enumerate_pixels_mut().for_each(|(x, y, pixel)| {
+        let red = 0.0;
+        let green = x as f32 / width as f32;
+        let blue = y as f32 / height as f32;
+        *pixel = image::Rgb([red, green, blue]);
+    });
+}
+
 fn main() {
     // Configurable dimensions for the canvas
     let width = 1024;
@@ -33,12 +49,13 @@ fn main() {
     // Solid black
     let background_color = image::Rgb([0.0f32; 3]);
 
-    use image::ImageBuffer;
-    let framebuffer = ImageBuffer::from_pixel(width, height, background_color);
+    let mut framebuffer = ImageBuffer::from_pixel(width, height, background_color);
+
+    render(&mut framebuffer);
 
     // Save the rendered frame to disk
-    let output_buffer =
-        ImageBuffer::from_fn(width, height, |x, y| quantize(framebuffer.get_pixel(x, y)));
+    let convert_pixel = |x, y| quantize(framebuffer.get_pixel(x, y));
+    let output_buffer = ImageBuffer::from_fn(width, height, convert_pixel);
 
     let output_path = "output.png";
     output_buffer
